@@ -45,6 +45,8 @@ upload(){
 
 delete(){
     [ -z "$1" ] && echo "* Error. No file specified" && exit
+    read -p "Are you sure you want to delete '$1'? (y/n): " response
+    [ "$response" != "y" ] && exit
     file=$(echo $1 | sed 's/ /%20/g')
     echo "> Deleting '$1'..."
     curl $options -X DELETE $url/$file 2>/dev/null
