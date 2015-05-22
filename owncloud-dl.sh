@@ -5,7 +5,7 @@ conf="$HOME/.owncloud"
 list(){
     dir=$(echo $1 | sed 's/ /%20/g')
     res=$(curl $options -X PROPFIND $url/$dir 2>/dev/null)
-    [ $? -gt 0 ] && echo "* Error listing files"
+    [ $? -gt 0 ] && echo "* Error listing files" && exit
     if [ "$platform" == "Linux" ];then
         quota=$(($(echo "$res" | grep -oPm1 "(?<=<d:quota-available-bytes>)[^<]+" | uniq)/(1024*1024)))
         echo -en "\t\t\t[Quota available: "$quota"MB]\n\n"
