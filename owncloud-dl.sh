@@ -142,12 +142,12 @@ create_conf(){
     [ "$protocol" == "http" ] || read -p "  Trust certificate [yes]: " trust_cert
     read -p "  Webdav path [remote.php/webdav]: " path
     [ -z $protocol ] && protocol="https";[ -z $port ] && port="443";[ -z $trust ] && trust="yes";[ -z $path ] && path="remote.php/webdav"
-    echo -en "username=$username\npassword=$password\nhost=$host\nprotocol=$protocol\nport=$port\ntrust_cert=$trust_cert\npath=$path\n" > $conf && chmod 600 $config
+    echo -en "username=$username\npassword=$password\nhost=$host\nprotocol=$protocol\nport=$port\ntrust_cert=$trust_cert\npath=$path\n" > $conf && chmod 600 $conf
 }
 depCheck(){
     for b in curl grep sed basename ;do
         which $b &>/dev/null
-            [ $? != 0 ] && echo "* Some dependencies are missing ($b)" && exit
+        [ $? != 0 ] && echo "* Some dependencies are missing ($b)" && exit
     done
     [ ! -f "$conf" ] && echo "* Config file not found" && create_conf && exit
 }
