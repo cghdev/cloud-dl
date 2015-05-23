@@ -6,15 +6,9 @@ list(){
     dir=$(echo $1 | sed 's/ /%20/g')
     res=$(curl $options -X PROPFIND $url/$dir 2>/dev/null)
     [ $? -gt 0 ] && echo "* Error listing files" && exit
-    if [ "$platform" == "Linux" ];then
-        quota=$(echo "$res" | grep -oPm1 "(?<=<d:quota-available-bytes>)[^<]+" | uniq)
-        [ -z $quota ] || echo -en "\t\t\t[Quota available: "$((quota/(1024*1024)))"MB]\n\n"
-        echo "$res" | grep -oPm1 "(?<=<d:href>)[^<]+" | sed -e "s|/$path||g" -e 's/%20/ /g'
-    else
-        quota=$(parse_xml "$res" "d:quota-available-bytes" | uniq)
-        [ -z $quota ] || echo -en "\t\t\t[Quota available: "$((quota/(1024*1024)))"MB]\n\n"
-        parse_xml "$res" "d:href" | sed -e "s|/$path||g" -e 's/%20/ /g'
-    fi
+    quota=$(parse_xml "$res" "d:quota-available-bytes" | uniq)  
+    [ -z $quota ] || echo -en "\t\t\t[Quota available: "$((quota/(1024*1024)))"MB]\n\n"
+    parse_xml "$res" "d:href" | sed -e "s|/$path||g" -e 's/%20/ /g'
 }
 
 download(){
@@ -74,7 +68,7 @@ exists(){ # if exists and is a file
     if [ $? -gt 0 ];then
         echo 0
     else
-        [ "$platform" == "Linux" ] && val=$(echo $res | grep -oPm1 "(?<=<d:href>)[^<]+" | head -1) || val=$(parse_xml "$res" "d:href" | head -1)
+        val=$(parse_xml "$res" | head -1)
         [ "${val: -1}" == "/" ] && echo 0 || echo 1
     fi
 }
@@ -128,9 +122,15 @@ read_dom(){
 }
 
 parse_xml(){
-    echo "$1" | while read_dom; do
-        [ "$ENTITY" == "$2" ] && echo $CONTENT
-    done
+
+   if [ "$platform" == "Linux" ];then
+        echo "$1" | grep -oPm1 "(?<=<$2>)[^<]+"
+    else
+        echo "$1" | while read_dom; do
+            [ "$ENTITY" == "$2" ] && echo $CONTENT
+        done
+    fi
+    
 }
 create_conf(){
     echo "> Creating new config file:"
