@@ -140,7 +140,7 @@ create_conf(){
     read -p "  Protocol [https]: " protocol
     read -p "  Port [443]: " port
     [ "$protocol" == "http" ] || read -p "  Trust certificate [yes]: " trust_cert
-    read -p "  Webdav path [remote.php/webdav]: " path
+    #read -p "  Webdav path [remote.php/webdav]: " path
     [ -z $protocol ] && protocol="https";[ -z $port ] && port="443";[ -z $trust ] && trust="yes";[ -z $path ] && path="remote.php/webdav"
     echo -en "username=$username\npassword=$password\nhost=$host\nprotocol=$protocol\nport=$port\ntrust_cert=$trust_cert\npath=$path\n" > $conf && chmod 600 $conf
 }
