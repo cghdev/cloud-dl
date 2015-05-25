@@ -1,5 +1,7 @@
 #!/bin/bash
 
+version="1.0.0"
+
 conf="$HOME/.owncloud"
 
 list(){
@@ -138,6 +140,9 @@ parse_args(){
             shift
             ;;
             -U|--unshare)   unshare "$2"
+            shift
+            ;;
+            -v|--version)   echo "Version: $version"
             shift
             ;;
             -h|--help)      usage; exit
