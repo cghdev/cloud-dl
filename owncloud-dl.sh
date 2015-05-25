@@ -75,7 +75,7 @@ list_shares(){
     for((n=0;n<${#type_a[@]};++n)); do
         [ "${type_a[$n]}" == "folder" ] && ftype='D' || ftype='F'
         path=$(echo "${path_a[$n]}" | sed 's/\*\*space\*\*/ /g')
-        echo "[$ftype] $path => $oc_url/index.php/s/${token_a[$n]} "
+        echo "[$ftype] $path => $oc_url/public.php?service=files&t=${token_a[$n]} "
     done
 }
 
