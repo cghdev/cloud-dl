@@ -85,9 +85,9 @@ share(){
     res=$(curl $options --data-urlencode "path=$1" --data-urlencode "shareType=3" $shr_pwd $OCS_SHARE_API/shares 2>/dev/null )
     [ $? -gt 0 ] && echo "* There was an error sharing '$1'" && exit
     [[ "$res" == *"<statuscode>404</statuscode>"* ]] && echo "* Unable to share '$1'. Wrong path" && exit
-    token=$(parse_xml "$res" "token")
+    url=$(parse_xml "$res" "url" | sed 's/\&amp;/\&/g')
     echo "> Done"
-    echo "> URL: $oc_url/index.php/s/$token"
+    echo "> URL: $url"
 }
 
 unshare(){
