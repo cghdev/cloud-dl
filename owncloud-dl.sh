@@ -70,11 +70,12 @@ list_shares(){
     [ $? -gt 0 ] && echo "* There was an error listing shares" && exit
     type_a=();path_a=();token_a=()
     for t in $(echo "$res" | grep "<item_type>" | sed 's/<.*>\(.*\)<\/.*>/\1/'); do type_a+=($t); done
-    for p in $(echo "$res" | grep "<path>" | sed 's/<.*>\(.*\)<\/.*>/\1/'); do path_a+=($p); done
+    for p in $(echo "$res" | grep "<path>" | sed 's/.*<.*>\(.*\)<\/.*>/\1/' | sed 's/ /\*\*space\*\*/g'); do path_a+=($p); done
     for tk in $(echo "$res" | grep "<token>" | sed 's/<.*>\(.*\)<\/.*>/\1/'); do token_a+=($tk); done
     for((n=0;n<${#type_a[@]};++n)); do
         [ "${type_a[$n]}" == "folder" ] && ftype='D' || ftype='F'
-        echo "[$ftype] ${path_a[$n]} => $oc_url/index.php/s/${token_a[$n]} "
+        path=$(echo "${path_a[$n]}" | sed 's/\*\*space\*\*/ /g')
+        echo "[$ftype] $path => $oc_url/index.php/s/${token_a[$n]} "
     done
 }
 
@@ -92,7 +93,8 @@ share(){
 
 unshare(){
     [ -z "$1" ] && echo "* Error. No share specified" && exit
-    res=$(curl $options $OCS_SHARE_API/shares?path=$1 2>/dev/null)
+    path=$(echo $1 | sed 's/ /%20/g')
+    res=$(curl $options $OCS_SHARE_API/shares?path=$path 2>/dev/null)
     [ $? -gt 0 ] && echo "* There was an error getting id" && exit
     [[ "$res" == *"<statuscode>404</statuscode>"* ]] && echo "* Unable to delete share '$1'. Wrong path" && exit
     id=$(parse_xml "$res" "id")
