@@ -17,5 +17,8 @@ Options:
     -D/--delete <file|dir>          Delete file or directory
     -k/--mkdir <dir>                Create new directory
     -M/--move <source> <target>     Move file from remote <source> to remote <target> (e.g. --move file.txt somedir/file.txt)
+    -s/--share <file|dir> [-p]      Create a public share and shows the url. Optionally -p prompts for a password
+    -L/--list-shares                List shares
+    -U/--unshare <file|dir>         Delete a public share
     -h/--help                       Show this help
 ```
