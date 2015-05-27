@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version="1.0.2"
+version="1.0.4"
 
 conf="$HOME/.owncloud"
 
@@ -32,7 +32,7 @@ upload(){
     bname=$(basename "$file")
     if [ -f "$1" ];then
         echo "> Uploading '$1'..."
-        curl $options -T "$1" $dav_url/$2/$bname 2>/dev/null
+        curl --progress-bar $options -T "$1" $dav_url/$2/$bname >/dev/null
         [ $? -eq 0 ] && echo "> Done" || echo "* Error uploading the file. Verify target directory exists"
     else
         echo "* File '$1' not found"
@@ -41,7 +41,7 @@ upload(){
 
 delete(){
     [ -z "$1" ] && echo "* Error. No file specified" && exit
-    read -p "Are you sure you want to delete '$1'? (y/n): " response
+    read -p "Are you sure you want to delete '$1'? [y/n]: " response
     [ "$response" != "y" ] && exit
     file=$(echo $1 | sed 's/ /%20/g')
     echo "> Deleting '$1'..."
