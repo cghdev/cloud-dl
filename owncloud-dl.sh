@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version="1.0.4"
+version="1.5	"
 
 conf="$HOME/.owncloud"
 
@@ -8,9 +8,14 @@ list(){
     dir=$(echo $1 | sed 's/ /%20/g')
     res=$(curl $options -X PROPFIND $dav_url/$dir 2>/dev/null)
     [ $? -gt 0 ] && echo "* Error listing files" && exit
-    quota=$(parse_xml "$res" "d:quota-available-bytes" | uniq)  
-    [ -z $quota ] || echo -en "\t\t\t[Quota available: "$((quota/(1024*1024)))"MB]\n\n"
-    parse_xml "$res" "d:href" | sed -e "s|/$path||g" -e 's/%20/ /g'
+    quota=$(parse_xml "$res" "d:quota-available-bytes" | uniq)
+    echo $quota
+    [ -z $trail ] || trail=${trail}/
+    if [ ! -z $quota ];then
+    	[ $quota -lt 0 ] && quota="Unlimited" || quota="$((quota/(1024*1024)))"MB
+    	echo -en "\t\t\t[Quota available: $quota]\n\n"
+    fi
+    parse_xml "$res" "d:href" | sed -e "s|/$trail$path||g" -e 's/%20/ /g'
 }
 
 download(){
@@ -103,7 +108,7 @@ unshare(){
 }
 
 exists(){ # if exists and is a file
-    res=$(curl $options -X PROPFIND $dav_url/$1 2>/dev/null) 
+    res=$(curl $options -X PROPFIND $dav_url/$1 2>/dev/null)
     if [ $? -gt 0 ];then
         echo 0
     else
@@ -144,6 +149,9 @@ parse_args(){
             -U|--unshare)   unshare "$2"
             shift
             ;;
+            --configure)   create_conf
+            shift
+            ;;            
             -v|--version)   echo "Version: $version"
             shift
             ;;
@@ -167,6 +175,7 @@ usage(){
     echo "   -s/--share <file|dir> [-p]      Create a public share and shows the url. Optionally -p prompts for a password"
     echo "   -L/--list-shares                List shares"
     echo "   -U/--unshare <file|dir>         Delete a public share"
+    echo "   --configure                     Change connection configuration"
     echo "   -h/--help                       Show this help"
     echo
 }
@@ -178,26 +187,28 @@ read_dom(){
 parse_xml(){
 
    if [ "$platform" == "Linux" ];then
-        echo "$1" | grep -oPm1 "(?<=<$2>)[^<]+"
+        echo "$1" | grep -oP "(?<=<$2>)[^<]+"
     else
         echo "$1" | while read_dom; do
             [ "$ENTITY" == "$2" ] && echo $CONTENT
         done
     fi
-    
 }
+
 create_conf(){
     echo "> Creating new config file:"
     read -p "  Username: " username
     read -s -p "  Password: " password; echo
-    read -p "  Hostname: " host
-    read -p "  Protocol [https]: " protocol
-    read -p "  Port [443]: " port
-    [ "$protocol" == "http" ] || read -p "  Trust certificate [yes]: " trust_cert
-    #read -p "  Webdav path [remote.php/webdav]: " path
-    [ -z $protocol ] && protocol="https";[ -z $port ] && port="443";[ -z $trust ] && trust="yes";[ -z $path ] && path="remote.php/webdav"
-    echo -en "username=$username\npassword=$password\nhost=$host\nprotocol=$protocol\nport=$port\ntrust_cert=$trust_cert\npath=$path\n" > $conf && chmod 600 $conf
+    read -p "  Server (e.g. https://example.com/nextcloud): " host
+    [ "${host: -1}" == "/" ] && host=$(echo $host | rev | sed -e 's|/||' | rev)
+    [[ "$host" == *"https"* ]] && read -p "  Trust certificate [yes]: " trust_cert
+    trail=$(echo $host | cut -d '/' -f4)
+    [ -z $trust_cert ] && trust_cert="yes"; path="remote.php/webdav"
+    echo -en "username=$username\npassword=$password\nhost=$host\ntrust_cert=$trust_cert\ntrail=$trail\npath=$path\n" > $conf && chmod 600 $conf
+    setenv
+    testCon
 }
+
 depCheck(){
     for b in curl grep sed basename ;do
         which $b &>/dev/null
@@ -206,16 +217,22 @@ depCheck(){
     [ ! -f "$conf" ] && echo "* Config file not found" && create_conf && exit
 }
 
+testCon(){
+	res=$(curl $options -X PROPFIND $dav_url/$dir 2>/dev/null)
+    [ $? -gt 0 ] && echo "Unable to connect to server. Check your configuration" && exit
+}
+
+setenv(){
+	for l in $(cat $conf); do [ "${l::1}" != "#" ] && export $l; done
+	[ "$trust_cert" == "yes" ] && trust="-k" || trust=''
+	options="-f $trust --user $username:$password"
+	oc_url=$host
+	dav_url=$oc_url/$path
+	OCS_SHARE_API="$oc_url/ocs/v1.php/apps/files_sharing/api/v1"
+}
 
 depCheck
 platform=$(uname)
-
-for l in $(cat $conf); do [ "${l::1}" != "#" ] && export $l; done
-[ "$trust_cert" == "yes" ] && trust="-k" || trust=''
-options="-f $trust --user $username:$password"
-oc_url=$protocol://$host:$port
-dav_url=$oc_url/$path
-OCS_SHARE_API="$oc_url/ocs/v1.php/apps/files_sharing/api/v1"
-
+setenv
 
 parse_args "$@"
