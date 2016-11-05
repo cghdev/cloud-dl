@@ -2,7 +2,7 @@
 
 version="1.5	"
 
-conf="$HOME/.owncloud"
+conf="$HOME/.cloudconf"
 
 list(){
     dir=$(echo $1 | sed 's/ /%20/g')
