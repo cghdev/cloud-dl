@@ -9,7 +9,6 @@ list(){
     res=$(curl $options -X PROPFIND $dav_url/$dir 2>/dev/null)
     [ $? -gt 0 ] && echo "* Error listing files" && exit
     quota=$(parse_xml "$res" "d:quota-available-bytes" | uniq)
-    echo $quota
     [ -z $trail ] || trail=${trail}/
     if [ ! -z $quota ];then
     	[ $quota -lt 0 ] && quota="Unlimited" || quota="$((quota/(1024*1024)))"MB

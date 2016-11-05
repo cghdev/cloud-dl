@@ -7,7 +7,7 @@ Tested in:
 * owncloud 6.07
 * owncloud 7.05
 * owncloud 8.03
-
+* Nextcloud 10.0.1
 ```
 Usage: owncloud-dl.sh <options> [file|dir]
 Options:
@@ -20,5 +20,6 @@ Options:
     -s/--share <file|dir> [-p]      Create a public share and shows the url. Optionally -p prompts for a password
     -L/--list-shares                List shares
     -U/--unshare <file|dir>         Delete a public share
+    --configure                     Change connection configuration
     -h/--help                       Show this help
 ```
