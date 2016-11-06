@@ -25,7 +25,7 @@ download(){
     if [ $(exists $pname) == 1 ];then
         echo "> Downloading $fname..."
         curl --progress-bar -o "$fname" $options -X GET $dav_url/$pname
-        [ $? -gt 0 ] && echo "[!] Error downloading the file" || echo "> Done"
+        [ $? -gt 0 ] && echo "[!] Error downloading the file" || echo "[+] Done"
     else
         echo "[!] File does not exist"
     fi
@@ -38,7 +38,7 @@ upload(){
     if [ -f "$1" ];then
         echo "> Uploading '$1'..."
         curl --progress-bar $options -T "$1" $dav_url/$2/$bname >/dev/null
-        [ $? -eq 0 ] && echo "> Done" || echo "[!] Error uploading the file. Verify target directory exists"
+        [ $? -eq 0 ] && echo "[+] Done" || echo "[!] Error uploading the file. Verify target directory exists"
     else
         echo "[!] File '$1' not found"
     fi
@@ -51,14 +51,14 @@ delete(){
     file=$(echo $1 | sed 's/ /%20/g')
     echo "> Deleting '$1'..."
     curl $options -X DELETE $dav_url/$file 2>/dev/null
-    [ $? -eq 0 ] && echo "> Done" || echo "[!] There was an error deleting '$1'"
+    [ $? -eq 0 ] && echo "[+] Done" || echo "[!] There was an error deleting '$1'"
 }
 
 _mkdir(){
     [ -z "$1" ] && echo "[!] Error. No directory specified" && exit
     file=$(echo $1 | sed 's/ /%20/g')
     curl $options -X MKCOL $dav_url/$file 2>/dev/null
-    [ $? -eq 0 ] && echo "> Done" || echo "[!] Unable to create directory"
+    [ $? -eq 0 ] && echo "[+] Done" || echo "[!] Unable to create directory"
 }
 
 _mv(){
@@ -76,7 +76,7 @@ _mv(){
         [ "$response" != "y" ] && exit
     fi
     curl $options -X MOVE $dav_url/$source --header "Destination: $dav_url/$target" 2>/dev/null
-    [ $? -eq 0 ] && echo "> Done" || echo "[!] Unable to move file"
+    [ $? -eq 0 ] && echo "[+] Done" || echo "[!] Unable to move file"
 }
 
 list_shares(){
@@ -101,7 +101,7 @@ share(){
     [ $? -gt 0 ] && echo "[!] There was an error sharing '$1'" && exit
     [[ "$res" == *"<statuscode>404</statuscode>"* ]] && echo "[!] Unable to share '$1'. Wrong path" && exit
     url=$(parse_xml "$res" "url" | sed 's/\&amp;/\&/g')
-    echo "> Done"
+    echo "[+] Done"
     echo "> URL: $url"
 }
 
@@ -113,7 +113,7 @@ unshare(){
     [[ "$res" == *"<statuscode>404</statuscode>"* ]] && echo "[!] Unable to delete share '$1'. Wrong path" && exit
     id=$(parse_xml "$res" "id")
     curl $options -X DELETE "$OCS_SHARE_API/shares/$id" &>/dev/null
-    echo "> Done"
+    echo "[+] Done"
 }
 
 exists(){ # if exists (1 = file, 2 = dir, 0 = doesn't exist)
