@@ -74,7 +74,7 @@ _mv(){
         echo "[!] Error. The destination has to include the file name"
         exit
     elif [ $typ == 1 ];then
-        read -p "'$1' already exists. Overwrite? [y/n]: " response
+        read -p "'$2' already exists. Overwrite? [y/n]: " response
         [ "$response" != "y" ] && exit
     fi
     curl $options -X MOVE $dav_url/$source --header "Destination: $dav_url/$target" 2>/dev/null
