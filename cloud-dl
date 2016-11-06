@@ -7,71 +7,81 @@ conf="$HOME/.cloudconf"
 list(){
     dir=$(echo $1 | sed 's/ /%20/g')
     res=$(curl $options -X PROPFIND $dav_url/$dir 2>/dev/null)
-    [ $? -gt 0 ] && echo "* Error listing files" && exit
+    [ $? -gt 0 ] && echo '[!] Error listing files' && exit
     quota=$(parse_xml "$res" "d:quota-available-bytes" | uniq)
     [ -z $trail ] || trail=${trail}/
     if [ ! -z $quota ];then
     	[ $quota -lt 0 ] && quota="Unlimited" || quota="$((quota/(1024*1024)))"MB
-    	echo -en "\t\t\t[Quota available: $quota]\n\n"
+    	echo -en "\t\t\t[Quota available: $quota]\n"
     fi
+    echo 
     parse_xml "$res" "d:href" | sed -e "s|/$trail$path||g" -e 's/%20/ /g'
 }
 
 download(){
-    [ -z "$1" ] && echo "* Error. No file specified" && exit
+    [ -z "$1" ] && echo "[!] Error. No file specified" && exit
     fname=$(basename "$1")
     pname=$(echo $1 | sed 's/ /%20/g')
     if [ $(exists $pname) == 1 ];then
         echo "> Downloading $fname..."
         curl --progress-bar -o "$fname" $options -X GET $dav_url/$pname
-        [ $? -gt 0 ] && echo "* Error downloading the file" || echo "> Done"
+        [ $? -gt 0 ] && echo "[!] Error downloading the file" || echo "> Done"
     else
-        echo "* File does not exist"
+        echo "[!] File does not exist"
     fi
 }
 
 upload(){
-    [ -z "$1" ] && echo "* Error. No file specified" && exit
+    [ -z "$1" ] && echo "[!] Error. No file specified" && exit
     file=$(echo $1 | sed 's/ /%20/g')
     bname=$(basename "$file")
     if [ -f "$1" ];then
         echo "> Uploading '$1'..."
         curl --progress-bar $options -T "$1" $dav_url/$2/$bname >/dev/null
-        [ $? -eq 0 ] && echo "> Done" || echo "* Error uploading the file. Verify target directory exists"
+        [ $? -eq 0 ] && echo "> Done" || echo "[!] Error uploading the file. Verify target directory exists"
     else
-        echo "* File '$1' not found"
+        echo "[!] File '$1' not found"
     fi
 }
 
 delete(){
-    [ -z "$1" ] && echo "* Error. No file specified" && exit
+    [ -z "$1" ] && echo "[!] Error. No file specified" && exit
     read -p "Are you sure you want to delete '$1'? [y/n]: " response
     [ "$response" != "y" ] && exit
     file=$(echo $1 | sed 's/ /%20/g')
     echo "> Deleting '$1'..."
     curl $options -X DELETE $dav_url/$file 2>/dev/null
-    [ $? -eq 0 ] && echo "> Done" || echo "* There was an error deleting '$1'"
+    [ $? -eq 0 ] && echo "> Done" || echo "[!] There was an error deleting '$1'"
 }
 
 _mkdir(){
-    [ -z "$1" ] && echo "* Error. No directory specified" && exit
+    [ -z "$1" ] && echo "[!] Error. No directory specified" && exit
     file=$(echo $1 | sed 's/ /%20/g')
     curl $options -X MKCOL $dav_url/$file 2>/dev/null
-    [ $? -eq 0 ] && echo "> Done" || echo "* Unable to create directory"
+    [ $? -eq 0 ] && echo "> Done" || echo "[!] Unable to create directory"
 }
 
 _mv(){
-    [ -z "$1" ] && echo "* Error. No file specified" && exit
-    [ -z "$2" ] && echo "* Error. You must specify destination" && exit
+    [ -z "$1" ] && echo "[!] Error. No file specified" && exit
+    [ -z "$2" ] && echo "[!] Error. You must specify destination" && exit
     source=$(echo $1 | sed 's/ /%20/g')
     target=$(echo $2 | sed 's/ /%20/g')
+    [ $(exists $1) == 0 ] && echo "[!] Error. File $1 does not exist" && exit
+    typ=$(exists $2)
+    if [ $typ == 2 ];then
+        echo "[!] Error. The destination has to include the file name"
+        exit
+    elif [ $typ == 1 ];then
+        read -p "'$1' already exists. Overwrite? [y/n]: " response
+        [ "$response" != "y" ] && exit
+    fi
     curl $options -X MOVE $dav_url/$source --header "Destination: $dav_url/$target" 2>/dev/null
-    [ $? -eq 0 ] && echo "> Done" || echo "* Unable to rename file"
+    [ $? -eq 0 ] && echo "> Done" || echo "[!] Unable to move file"
 }
 
 list_shares(){
     res=$(curl $options $OCS_SHARE_API/shares 2>/dev/null)
-    [ $? -gt 0 ] && echo "* There was an error listing shares" && exit
+    [ $? -gt 0 ] && echo "[!] There was an error listing shares" && exit
     type_a=();path_a=();token_a=()
     for t in $(echo "$res" | grep "<item_type>" | sed 's/<.*>\(.*\)<\/.*>/\1/'); do type_a+=($t); done
     for p in $(echo "$res" | grep "<path>" | sed 's/.*<.*>\(.*\)<\/.*>/\1/' | sed 's/ /\*\*space\*\*/g'); do path_a+=($p); done
@@ -84,35 +94,34 @@ list_shares(){
 }
 
 share(){
-    [ -z "$1" ] && echo "* Error. No file specified" && exit
+    [ -z "$1" ] && echo "[!] Error. No file specified" && exit
     shr_pwd=""
     [ "$2" == "-p" ] && read -sp "Password: " pwd && shr_pwd="--data-urlencode password=$pwd" && echo
     res=$(curl $options --data-urlencode "path=$1" --data-urlencode "shareType=3" $shr_pwd $OCS_SHARE_API/shares 2>/dev/null )
-    [ $? -gt 0 ] && echo "* There was an error sharing '$1'" && exit
-    [[ "$res" == *"<statuscode>404</statuscode>"* ]] && echo "* Unable to share '$1'. Wrong path" && exit
+    [ $? -gt 0 ] && echo "[!] There was an error sharing '$1'" && exit
+    [[ "$res" == *"<statuscode>404</statuscode>"* ]] && echo "[!] Unable to share '$1'. Wrong path" && exit
     url=$(parse_xml "$res" "url" | sed 's/\&amp;/\&/g')
     echo "> Done"
     echo "> URL: $url"
 }
 
 unshare(){
-    [ -z "$1" ] && echo "* Error. No share specified" && exit
+    [ -z "$1" ] && echo "[!] Error. No share specified" && exit
     path=$(echo $1 | sed 's/ /%20/g')
     res=$(curl $options $OCS_SHARE_API/shares?path=$path 2>/dev/null)
-    [ $? -gt 0 ] && echo "* There was an error getting id" && exit
-    [[ "$res" == *"<statuscode>404</statuscode>"* ]] && echo "* Unable to delete share '$1'. Wrong path" && exit
+    [ $? -gt 0 ] && echo "[!] There was an error getting id" && exit
+    [[ "$res" == *"<statuscode>404</statuscode>"* ]] && echo "[!] Unable to delete share '$1'. Wrong path" && exit
     id=$(parse_xml "$res" "id")
     curl $options -X DELETE "$OCS_SHARE_API/shares/$id" &>/dev/null
     echo "> Done"
 }
 
-exists(){ # if exists and is a file
-    res=$(curl $options -X PROPFIND $dav_url/$1 2>/dev/null)
-    if [ $? -gt 0 ];then
+exists(){ # if exists (1 = file, 2 = dir, 0 = doesn't exist)
+    res=$(list "$1" | grep -v "Quota available" | head -n2 | tail -n1)
+    if [ "$res" == "[!] Error listing files" ];then
         echo 0
     else
-        val=$(parse_xml "$res" | head -1)
-        [ "${val: -1}" == "/" ] && echo 0 || echo 1
+        [ "${res: -1}" == "/" ] && echo 2 || echo 1
     fi
 }
 
@@ -211,9 +220,9 @@ create_conf(){
 depCheck(){
     for b in curl grep sed basename ;do
         which $b &>/dev/null
-        [ $? != 0 ] && echo "* Some dependencies are missing ($b)" && exit
+        [ $? != 0 ] && echo "[!] Some dependencies are missing ($b)" && exit
     done
-    [ ! -f "$conf" ] && echo "* Config file not found" && create_conf && exit
+    [ ! -f "$conf" ] && echo "[!] Config file not found" && create_conf && exit
 }
 
 testCon(){
