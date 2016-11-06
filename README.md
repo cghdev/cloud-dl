@@ -1,6 +1,6 @@
 # cloud-dl
 
-Bash script to manage files on owncloud via webdav. cloud-dl allows list, upload, download, delete, move, create and share files.
+Bash script to manage files on owncloud via webdav. cloud-dl allows you to list, upload, download, delete, move, create and share files.
 
 Tested in:
     
