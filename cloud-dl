@@ -15,7 +15,9 @@ list(){
     	echo -en "\t\t\t[Quota available: $quota]\n"
     fi
     echo 
-    parse_xml "$res" "d:href" | sed -e "s|/$trail$path||g" -e 's/%20/ /g'
+    l="$(parse_xml "$res" "d:href" | sed -e "s|/$trail$path||g" -e 's/%20/ /g')"
+    echo "$l" | grep --color=never -e "/$"
+    echo "$l" | grep --color=never -v -e "/$"
 }
 
 download(){
