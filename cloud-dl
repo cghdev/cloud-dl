@@ -25,7 +25,7 @@ download(){
     fname=$(basename "$1")
     pname=$(echo $1 | sed 's/ /%20/g')
     if [ $(exists $pname) == 1 ];then
-        echo "> Downloading $fname..."
+        echo "[+] Downloading $fname..."
         curl --progress-bar -o "$fname" $options -X GET $dav_url/$pname
         [ $? -gt 0 ] && echo "[!] Error downloading the file" || echo "[+] Done"
     else
@@ -38,7 +38,7 @@ upload(){
     file=$(echo $1 | sed 's/ /%20/g')
     bname=$(basename "$file")
     if [ -f "$1" ];then
-        echo "> Uploading '$1'..."
+        echo "[+] Uploading '$1'..."
         curl --progress-bar $options -T "$1" $dav_url/$2/$bname >/dev/null
         [ $? -eq 0 ] && echo "[+] Done" || echo "[!] Error uploading the file. Verify target directory exists"
     else
@@ -51,7 +51,7 @@ delete(){
     read -p "Are you sure you want to delete '$1'? [y/n]: " response
     [ "$response" != "y" ] && exit
     file=$(echo $1 | sed 's/ /%20/g')
-    echo "> Deleting '$1'..."
+    echo "[+] Deleting '$1'..."
     curl $options -X DELETE $dav_url/$file 2>/dev/null
     [ $? -eq 0 ] && echo "[+] Done" || echo "[!] There was an error deleting '$1'"
 }
@@ -104,7 +104,7 @@ share(){
     [[ "$res" == *"<statuscode>404</statuscode>"* ]] && echo "[!] Unable to share '$1'. Wrong path" && exit
     url=$(parse_xml "$res" "url" | sed 's/\&amp;/\&/g')
     echo "[+] Done"
-    echo "> URL: $url"
+    echo "[+] URL: $url"
 }
 
 unshare(){
@@ -206,7 +206,7 @@ parse_xml(){
 }
 
 create_conf(){
-    echo "> Creating new config file:"
+    echo "[+] Creating new config file:"
     read -p "  Username: " username
     read -s -p "  Password: " password; echo
     read -p "  Server (e.g. https://example.com/nextcloud): " host
