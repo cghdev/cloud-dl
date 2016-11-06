@@ -36,10 +36,11 @@ download(){
 upload(){
     [ -z "$1" ] && echo "[!] Error. No file specified" && exit
     file=$(echo $1 | sed 's/ /%20/g')
+    target=$(echo $2 | sed 's/ /$20/g')
     bname=$(basename "$file")
     if [ -f "$1" ];then
         echo "[+] Uploading '$1'..."
-        curl --progress-bar $options -T "$1" $dav_url/$2/$bname >/dev/null
+        curl --progress-bar $options -T "$1" $dav_url/$target/$bname >/dev/null
         [ $? -eq 0 ] && echo "[+] Done" || echo "[!] Error uploading the file. Verify target directory exists"
     else
         echo "[!] File '$1' not found"
