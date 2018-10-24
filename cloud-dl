@@ -99,17 +99,23 @@ list_shares(){
 }
 
 share(){
-    [ -z "$1" ] && echo "[!] Error. No file specified" && exit
-    shr_pwd=""
-    [ "$2" == "-p" ] && read -sp "Password: " pwd && shr_pwd="--data-urlencode password=$pwd" && echo
-    res=$(curl $options $ocs_header --data-urlencode "path=$1" --data-urlencode "shareType=3" $shr_pwd $OCS_SHARE_API/shares 2>/dev/null )
-    [ $? -gt 0 ] && echo "[!] There was an error sharing '$1'" && exit
-    message=$(parse_xml "$res" "message")
-    status=$(parse_xml "$res" "statuscode")
-    [[ "$status" != "200" ]] && echo "[!] Unable to share '$1'. $message" && exit
-    url=$(parse_xml "$res" "url" | sed 's/\&amp;/\&/g')
-    echo "[+] Done"
-    echo "[+] URL: $url"
+  [ -z "$1" ] && echo "[!] Error. No file specified" && exit
+  shr_pwd=""
+  for arg in "$@"
+  do
+    [[ $arg == "-p" ]] && read -sp "Password: " pwd && shr_pwd="--data-urlencode password=$pwd" && echo
+    [[ $arg == "-q" ]] && quiet=1
+  done
+  res=$(curl $options $ocs_header --data-urlencode "path=$1" --data-urlencode "shareType=3" $shr_pwd $OCS_SHARE_API/shares 2>/dev/null )
+  [ $? -gt 0 ] && echo "[!] There was an error sharing '$1'" && exit
+  message=$(parse_xml "$res" "message")
+  status=$(parse_xml "$res" "statuscode")
+  [[ "$status" != "200" ]] && echo "[!] Unable to share '$1'. $message" && exit
+  url=$(parse_xml "$res" "url" | sed 's/\&amp;/\&/g')
+  url_line=""
+  [ -z $quiet ] && echo "[+] Done" && url_line="[+] URL: "
+  url_line="${url_line}${url}"
+  echo $url_line
 }
 
 unshare(){
@@ -158,7 +164,7 @@ parse_args(){
             -L|--list-shares)   list_shares
             shift
             ;;
-            -s|--share)     share "$2" "$3"; exit
+            -s|--share)     share "$2" "$3" "$4"; exit
             shift
             ;;
             -U|--unshare)   unshare "$2"
@@ -187,7 +193,7 @@ usage(){
     echo "   -D/--delete <file|dir>          Delete file or directory"
     echo "   -k/--mkdir <dir>                Create new directory"
     echo "   -M/--move <source> <target>     Move file from remote <source> to remote <target> (e.g. --move file.txt somedir/file.txt)"
-    echo "   -s/--share <file|dir> [-p]      Create a public share and shows the url. Optionally -p prompts for a password"
+    echo "   -s/--share <file|dir> [-p] [-q] Create a public share and shows the url. Optionally -p prompts for a password, -q returns only the share URL"
     echo "   -L/--list-shares                List shares"
     echo "   -U/--unshare <file|dir>         Delete a public share"
     echo "   --configure                     Change connection configuration"
