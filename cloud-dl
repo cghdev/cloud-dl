@@ -8,13 +8,13 @@ list(){
     dir=$(echo $1 | sed 's/ /%20/g')
     res=$(curl $extra_opts $options -X PROPFIND $dav_url/$dir 2>/dev/null)
     [ $? -gt 0 ] && echo '[!] Error listing files' && exit
-    quota=$(parse_xml "$res" "d:quota-available-bytes" | uniq)
+    quota=$(parse_xml "$res" "d:quota-available-bytes" | uniq | sort | tail -n 1)
     [ -z $trail ] || trail=${trail}/
-    if [ ! -z $quota ];then
-    	[ $quota -lt 0 ] && quota="Unlimited" || quota="$((quota/(1024*1024)))"MB
-    	echo -en "\t\t\t[Quota available: $quota]\n"
+    if [ ! -z "$quota" ]; then
+        [ "$quota" -lt 0 ] && quota="Unlimited" || quota="$((quota/(1024*1024)))"MB
+        echo -en "\t\t\t[Quota available: $quota]\n"
     fi
-    echo 
+    echo
     l="$(parse_xml "$res" "d:href" | sed -e "s|/$trail$path||g" -e 's/%20/ /g')"
     echo "$l" | grep --color=never -e "/$"
     echo "$l" | grep --color=never -v -e "/$"
@@ -172,7 +172,7 @@ parse_args(){
             ;;
             --configure)   create_conf
             shift
-            ;;            
+            ;;
             -v|--version)   echo "Version: $version"
             shift
             ;;
@@ -207,7 +207,7 @@ read_dom(){
 
 parse_xml(){
 
-   if [ "$platform" == "Linux" ];then
+   if [ "$platform" == "Linux" ]; then
         echo "$1" | grep -oP "(?<=<$2>)[^<]+"
     else
         echo "$1" | while read_dom; do
