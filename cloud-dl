@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version="1.6"
+version="1.7"
 
 conf="$HOME/.cloudconf"
 
