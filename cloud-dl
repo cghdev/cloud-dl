@@ -59,8 +59,12 @@ delete(){
 
 _mkdir(){
     [ -z "$1" ] && echo "[!] Error. No directory specified" && exit
-    file=$(echo $1 | sed 's/ /%20/g')
-    curl $extra_opts $options -X MKCOL $dav_url/$file 2>/dev/null
+    dirs=$(echo "$1" | tr '/' ' ')
+    for d in $dirs
+    do
+        dir=${dir}/$(echo $d | sed 's/ /%20/g')
+        curl $extra_opts $options -X MKCOL $dav_url/$dir 2>/dev/null
+    done
     [ $? -eq 0 ] && echo "[+] Done" || echo "[!] Unable to create directory"
 }
 
